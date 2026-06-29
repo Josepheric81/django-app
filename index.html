@@ -1,0 +1,319 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Analytics Dashboard</title>
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+
+        body{
+            margin:0;
+            font-family:Arial,Helvetica,sans-serif;
+            background:#f5f6fa;
+        }
+
+        .sidebar{
+            position:fixed;
+            left:0;
+            top:0;
+            width:250px;
+            height:100vh;
+            background:#1f2937;
+            color:white;
+        }
+
+        .sidebar h2{
+            text-align:center;
+            padding:20px;
+            border-bottom:1px solid gray;
+        }
+
+        .sidebar ul{
+            list-style:none;
+            padding:0;
+        }
+
+        .sidebar li{
+            padding:15px 25px;
+        }
+
+        .sidebar li:hover{
+            background:#374151;
+            cursor:pointer;
+        }
+
+        .content{
+            margin-left:250px;
+            padding:25px;
+        }
+
+        .header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:20px;
+        }
+
+        .cards{
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:20px;
+        }
+
+        .card{
+            background:white;
+            padding:20px;
+            border-radius:10px;
+            box-shadow:0 2px 8px rgba(0,0,0,.1);
+        }
+
+        .card h3{
+            margin:0;
+            color:#666;
+        }
+
+        .card h1{
+            color:#2563eb;
+        }
+
+        .charts{
+            display:grid;
+            grid-template-columns:2fr 1fr;
+            gap:20px;
+            margin-top:30px;
+        }
+
+        .chart-box{
+            background:white;
+            padding:20px;
+            border-radius:10px;
+            box-shadow:0 2px 8px rgba(0,0,0,.1);
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        table th,
+        table td{
+            padding:12px;
+            border-bottom:1px solid #ddd;
+            text-align:left;
+        }
+
+        footer{
+            margin-top:30px;
+            text-align:center;
+            color:gray;
+        }
+
+    </style>
+
+</head>
+<body>
+
+<div class="sidebar">
+
+    <h2>Analytics</h2>
+
+    <ul>
+        <li>Dashboard</li>
+        <li>Reports</li>
+        <li>Campaigns</li>
+        <li>Customers</li>
+        <li>Subscriptions</li>
+        <li>Billing</li>
+        <li>Settings</li>
+        <li>Logout</li>
+    </ul>
+
+</div>
+
+<div class="content">
+
+<div class="header">
+
+<div>
+
+<h2>Welcome, {{ user.first_name }}</h2>
+<p>Media Analytics Dashboard</p>
+
+</div>
+
+<div>
+
+<strong>Plan:</strong>
+
+<span style="color:green;">
+{{ subscription_plan }}
+</span>
+
+</div>
+
+</div>
+
+
+<div class="cards">
+
+<div class="card">
+
+<h3>Total Clients</h3>
+
+<h1>{{ total_clients }}</h1>
+
+</div>
+
+<div class="card">
+
+<h3>Monthly Revenue</h3>
+
+<h1>${{ monthly_revenue }}</h1>
+
+</div>
+
+<div class="card">
+
+<h3>Active Campaigns</h3>
+
+<h1>{{ active_campaigns }}</h1>
+
+</div>
+
+<div class="card">
+
+<h3>Website Visitors</h3>
+
+<h1>{{ visitors }}</h1>
+
+</div>
+
+</div>
+
+
+<div class="charts">
+
+<div class="chart-box">
+
+<h3>Traffic Analytics</h3>
+
+<canvas id="trafficChart"></canvas>
+
+</div>
+
+<div class="chart-box">
+
+<h3>Subscription Plans</h3>
+
+<canvas id="pieChart"></canvas>
+
+</div>
+
+</div>
+
+<div class="chart-box" style="margin-top:25px;">
+
+<h3>Recent Clients</h3>
+
+<table>
+
+<tr>
+
+<th>Name</th>
+<th>Email</th>
+<th>Plan</th>
+<th>Status</th>
+
+</tr>
+
+{% for client in clients %}
+
+<tr>
+
+<td>{{ client.name }}</td>
+<td>{{ client.email }}</td>
+<td>{{ client.plan }}</td>
+<td>{{ client.status }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+<footer>
+
+<p>
+© 2026 Media Analytics Platform | Powered by Django
+</p>
+
+</footer>
+
+</div>
+
+<script>
+
+const trafficChart = new Chart(document.getElementById('trafficChart'),{
+
+type:'line',
+
+data:{
+
+labels:['Jan','Feb','Mar','Apr','May','Jun'],
+
+datasets:[{
+
+label:'Visitors',
+
+data:[1000,1200,1800,2100,2600,3200],
+
+borderColor:'blue',
+
+fill:false
+
+}]
+
+}
+
+});
+
+const pieChart = new Chart(document.getElementById('pieChart'),{
+
+type:'doughnut',
+
+data:{
+
+labels:['Basic','Professional','Enterprise'],
+
+datasets:[{
+
+data:[40,35,25],
+
+backgroundColor:[
+
+'#3498db',
+
+'#2ecc71',
+
+'#f39c12'
+
+]
+
+}]
+
+}
+
+});
+
+</script>
+
+</body>
+</html>
