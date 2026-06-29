@@ -54,9 +54,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Dependencies
-        run: pip install -r requirements.txt
-
       - name: Run Tests
         run: python manage.py test
 
