@@ -2,13 +2,9 @@ name: Django CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
-
+    branches: [ "main" ]
   pull_request:
-    branches:
-      - main
-
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -24,7 +20,6 @@ env:
   CONTAINER_NAME: django-app
 
 jobs:
-    
 
   test:
     name: Run Django Tests
@@ -59,21 +54,19 @@ jobs:
         with:
           python-version: "3.12"
 
-  scan: 
-    needs: build 
-    name: Run Trivy Vulnerability Scanner
-    uses: aquasecurity/trivy-action@0.28.0
-    with:
-     image-ref: django-app:${{ github.sha }}
-     format: table
-     exit-code: 1
-     ignore-unfixed: true
-     vuln-type: "os,library"
-     severity: "CRITICAL,HIGH"  
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
 
-  build image: 
-  steps:
+      - name: Run Tests
+        run: python manage.py test
 
+
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -89,7 +82,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-       docker build -t $ECR_REPOSITORY:${{ github.sha }} .
+          docker build -t $ECR_REPOSITORY:${{ github.sha }} .
 
       - name: Tag Docker Image
         run: |
@@ -101,6 +94,46 @@ jobs:
         run: |
           docker push \
             ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:${{ github.sha }}
+
+
+  scan:
+    name: Run Trivy Vulnerability Scanner
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy Image Scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+
+  deploy:
+    name: Deploy to Amazon ECS
+    runs-on: ubuntu-latest
+    needs: scan
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Render Amazon ECS Task Definition
         id: task-definition
