@@ -58,11 +58,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Dependencies
-        run: |
-             touch requirements.txt
-             pip install -r backend/requirements.txt
-
 
       - name: Run Migrations
         run: |
