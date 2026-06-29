@@ -58,11 +58,6 @@ jobs:
         with:
           python-version: "3.12"
 
-
-      - name: Run Migrations
-        run: |
-          python manage.py migrate
-
       - name: Run Django Tests
         run: |
           python manage.py test
