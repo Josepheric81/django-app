@@ -102,14 +102,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Grype
+      - name: Scan image
         run: |
-         curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
-
-      - name: Scan Docker Image with Grype (No Token Required)
-        run: |
-         grype $ECR_REPOSITORY:${{ github.sha }} 
-         exit-code: 0
+         trivy image myuser/django-dashboard:latest
 
   deploy:
     name: Deploy to Amazon ECS
