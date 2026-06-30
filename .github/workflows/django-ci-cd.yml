@@ -101,11 +101,11 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t django-dashboard:latest .
 
-      - name: Scan image
-        run: |
-         trivy image myuser/django-dashboard:latest
-
+      - name: Scan Docker image
+        run: trivy image django-dashboard:latest
   deploy:
     name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
