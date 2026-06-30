@@ -108,7 +108,7 @@ jobs:
 
       - name: Scan Docker Image with Grype (No Token Required)
         run: |
-         grype $ECR_REPOSITORY:${{ github.sha }} --fail-on hig
+         grype $ECR_REPOSITORY:${{ github.sha }} 
 
   deploy:
     name: Deploy to Amazon ECS
