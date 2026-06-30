@@ -102,16 +102,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Run Trivy Image Scan
-        uses: aquasecurity/trivy-action@0.36.0
-        with:
-          image-ref: ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
-          format: table
-          exit-code: 1
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+      - name: Install Grype
+        run: |
+         curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
 
+      - name: Scan Docker Image with Grype (No Token Required)
+        run: |
+         grype $ECR_REPOSITORY:${{ github.sha }} --fail-on hig
 
   deploy:
     name: Deploy to Amazon ECS
