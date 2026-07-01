@@ -103,41 +103,64 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Grype
         run: |
-         curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+           curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/binscan:
+          
+      - name: Run Trivy Vulnerability Scanner
+        runs-on: ubuntu-latest
+        needs: build
 
-      - name: Scan Docker Image with Grype (No Token Required)
-        run: |
-         grype $ECR_REPOSITORY:${{ github.sha }} --fail-on high
-  deploy:
-    name: Deploy to Amazon ECS
-    runs-on: ubuntu-latest
-    needs: scan
+  steps:
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+        name: Checkout Repository
+        uses: actions/checkout@v4,
 
-      - name: Configure AWS Credentials (OIDC)
+        name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }},
+
+      
+        name: Login to Amazon ECR
+        run: |
+           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \| docker login \--username AWS \--password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com,
+
+      
+        name: Pull image from ECR
+        run: |
+           docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }},
+
+      
+        name: Scan image with Trivy
+        run: |
+          docker run --rm \-v /var/run/docker.sock:/var/run/docker.sock \
+          aquasec/trivy:latest \
+          image --exit-code 0 --severity HIGH,CRITICAL \${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+    steps:
+     - name: Checkout Repository
+       uses: actions/checkout@v4
+
+     - name: Configure AWS Credentials (OIDC)
+       uses: aws-actions/configure-aws-credentials@v4
+       with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+     - name: Login to Amazon ECR
+       id: login-ecr
+       uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Render Amazon ECS Task Definition
-        id: task-definition
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }}
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+     - name: Render Amazon ECS Task Definition
+       id: task-definition
+       uses: aws-actions/amazon-ecs-render-task-definition@v1
+       with:
+       task-definition: ${{ env.ECS_TASK_DEFINITION }}
+       container-name: ${{ env.CONTAINER_NAME }}
+       image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
-      - name: Deploy to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
+     - name: Deploy to Amazon ECS
+       uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+       with:
           cluster: ${{ env.ECS_CLUSTER }}
           service: ${{ env.ECS_SERVICE }}
           task-definition: ${{ steps.task-definition.outputs.task-definition }}
